@@ -1,15 +1,34 @@
-/* util.c — Yardimci fonksiyonlar.
- * is_ascii_text_file: 3. adimda tam olarak yazilacak; simdilik stub.
- * Diger iki fonksiyon (stat tabanli) zaten kullanilabilir. */
+/* util.c — Dosya yardimcilari ve ASCII dogrulama. */
 
 #include <stdio.h>
 #include <sys/stat.h>
 
 #include "util.h"
 
+#define ASCII_CHECK_BUF_SIZE 8192
+
 int is_ascii_text_file(const char *path) {
-    (void)path;
-    return 1; /* TODO: 3. adimda gerçek kontrol */
+    FILE *fp = fopen(path, "rb");
+    if (!fp) {
+        return -1;
+    }
+
+    unsigned char buf[ASCII_CHECK_BUF_SIZE];
+    size_t n;
+
+    while ((n = fread(buf, 1, sizeof(buf), fp)) > 0) {
+        for (size_t i = 0; i < n; i++) {
+            /* Spec: "ASCII, karakter basina 1 bayt" -> her bayt < 128 olmali. */
+            if (buf[i] >= 128) {
+                fclose(fp);
+                return 0;
+            }
+        }
+    }
+
+    int err = ferror(fp);
+    fclose(fp);
+    return err ? -1 : 1;
 }
 
 size_t get_file_size(const char *path) {

@@ -8,9 +8,12 @@ SRCS := $(wildcard $(SRC_DIR)/*.c)
 OBJS := $(SRCS:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o)
 DEPS := $(OBJS:.o=.d)
 
-.PHONY: all clean
+.PHONY: all clean test
 
 all: $(TARGET)
+
+test: $(TARGET)
+	@bash tests/run_tests.sh
 
 $(TARGET): $(OBJS)
 	$(CC) $(CFLAGS) -o $@ $^

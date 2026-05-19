@@ -1,0 +1,27 @@
+# Build artifacts
+obj/
+tarsau
+*.o
+*.d
+
+# Archive outputs
+*.sau
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*~
+
+# OS
+.DS_Store
+
+# Test runtime artifacts (proje kökündeki gecici dosyalar)
+/t1
+/t2
+/t3
+/t3.txt
+/t4.txt
+/t5.dat
+/d1/
+/s1.sau

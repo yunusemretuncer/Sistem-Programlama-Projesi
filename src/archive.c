@@ -12,6 +12,11 @@
 
 #define COPY_BUFFER_SIZE 8192
 
+static const char *basename_of(const char *path) {
+    const char *slash = strrchr(path, '/');
+    return slash ? slash + 1 : path;
+}
+
 /* SAU formati kayit alanlari icin ',' ve '|' ayriclari kullaniyor.
  * Bu karakterleri iceren dosya adlari formati bozar -> reddet. */
 static int filename_has_invalid_chars(const char *name) {
@@ -76,19 +81,16 @@ int archive_create(const char *output_path,
     /* 1. Asama: tum giris dosyalarini dogrula ve meta veri topla. */
     for (int i = 0; i < num_files; i++) {
         const char *path = input_files[i];
+        const char *base = basename_of(path);
 
-        /* Arsivde sadece taban adi saklayalim (spec ornegi de boyle). */
-        const char *basename = strrchr(path, '/');
-        basename = basename ? basename + 1 : path;
-
-        if (strlen(basename) >= MAX_FILENAME_LEN) {
-            fprintf(stderr, "Hata: '%s' dosya adi cok uzun.\n", basename);
+        if (strlen(base) >= MAX_FILENAME_LEN) {
+            fprintf(stderr, "Hata: '%s' dosya adi cok uzun.\n", base);
             return 1;
         }
-        if (filename_has_invalid_chars(basename)) {
+        if (filename_has_invalid_chars(base)) {
             fprintf(stderr,
                     "Hata: '%s' dosya adinda ',' veya '|' kullanilamaz.\n",
-                    basename);
+                    base);
             return 1;
         }
 
@@ -99,16 +101,16 @@ int archive_create(const char *output_path,
             return 1;
         }
 
-        /* ASCII format kontrolu — spec'in en kritik gerekliligi. */
         int ascii_result = is_ascii_text_file(path);
         if (ascii_result == -1) {
             fprintf(stderr, "Hata: '%s' okunamadi.\n", path);
             return 1;
         }
         if (ascii_result == 0) {
-            /* Spec'in tam metni: "<dosya> giris dosyasinin formati uyumsuzdur!"
-             * Program "sorunsuz bir sekilde" cikmali, yani exit 0. */
-            printf("%s giriş dosyasının formatı uyumsuzdur!\n", path);
+            /* Spec: "<dosya> giris dosyasinin formati uyumsuzdur!"
+             * Spec ornegi sadece dosya adi gosterir ("t7"), yol degil.
+             * "Sorunsuz cikis" -> exit 0. */
+            printf("%s giriş dosyasının formatı uyumsuzdur!\n", base);
             return 0;
         }
 
@@ -118,7 +120,7 @@ int archive_create(const char *output_path,
             return 1;
         }
 
-        strncpy(entries[i].filename, basename, MAX_FILENAME_LEN - 1);
+        strncpy(entries[i].filename, base, MAX_FILENAME_LEN - 1);
         entries[i].filename[MAX_FILENAME_LEN - 1] = '\0';
         entries[i].permissions = perms;
         entries[i].size = size;

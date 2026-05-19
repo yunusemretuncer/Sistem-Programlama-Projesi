@@ -28,12 +28,10 @@ static int mkdir_recursive(const char *path) {
     }
     strcpy(tmp, path);
 
-    /* Sondaki '/'i kaldir. */
     if (tmp[len - 1] == '/') {
         tmp[len - 1] = '\0';
     }
 
-    /* Her ara dizini olustur. */
     for (char *p = tmp + 1; *p; p++) {
         if (*p == '/') {
             *p = '\0';
@@ -57,8 +55,7 @@ static int filename_is_safe(const char *name) {
     return 1;
 }
 
-/* `in`'den tam olarak `n` bayt okuyup `out`'a yazar.
- * Eksik okuma -> arsiv bozuk. */
+/* `in`'den tam olarak `n` bayt okuyup `out`'a yazar. */
 static int copy_n_bytes(FILE *in, FILE *out, size_t n) {
     unsigned char buf[COPY_BUFFER_SIZE];
     size_t remaining = n;
@@ -67,7 +64,7 @@ static int copy_n_bytes(FILE *in, FILE *out, size_t n) {
         size_t want = remaining < sizeof(buf) ? remaining : sizeof(buf);
         size_t got = fread(buf, 1, want, in);
         if (got == 0) {
-            return -1;  /* eksik veri */
+            return -1;
         }
         if (fwrite(buf, 1, got, out) != got) {
             return -1;
@@ -77,15 +74,43 @@ static int copy_n_bytes(FILE *in, FILE *out, size_t n) {
     return 0;
 }
 
+/* Spec gereksinimi: "d1 dizininde t1, t2, ... dosyalari acildi." */
+static void print_success_message(const char *output_dir,
+                                  const sau_entry_t *entries,
+                                  int count) {
+    if (output_dir != NULL && strcmp(output_dir, ".") != 0) {
+        printf("%s dizininde ", output_dir);
+    } else {
+        printf("Mevcut dizinde ");
+    }
+
+    for (int i = 0; i < count; i++) {
+        if (i > 0) {
+            if (i == count - 1) {
+                printf(" ve ");
+            } else {
+                printf(", ");
+            }
+        }
+        printf("%s", entries[i].filename);
+    }
+    printf(" dosyaları açıldı.\n");
+}
+
 int archive_extract(const char *archive_path, const char *output_dir) {
-    FILE *in = fopen(archive_path, "rb");
-    if (!in) {
-        fprintf(stderr, "Hata: Arsiv dosyasi '%s' acilamadi: %s\n",
-                archive_path, strerror(errno));
+    /* Arsiv dosyasi adi *.sau olmali. Aksi halde spec'in istedigi mesaji bas. */
+    size_t plen = strlen(archive_path);
+    if (plen < 4 || strcmp(archive_path + plen - 4, ".sau") != 0) {
+        fprintf(stderr, "%s", BAD_ARCHIVE_MSG);
         return 1;
     }
 
-    /* 1. Organizasyon bolumunu oku. */
+    FILE *in = fopen(archive_path, "rb");
+    if (!in) {
+        fprintf(stderr, "%s", BAD_ARCHIVE_MSG);
+        return 1;
+    }
+
     sau_entry_t entries[MAX_FILES];
     int count = 0;
     if (sau_read_organization(in, entries, &count) != 0 || count == 0) {
@@ -94,7 +119,6 @@ int archive_extract(const char *archive_path, const char *output_dir) {
         return 1;
     }
 
-    /* 2. Tum dosya adlarini guvenlik kontrolunden gecir. */
     for (int i = 0; i < count; i++) {
         if (!filename_is_safe(entries[i].filename)) {
             fprintf(stderr, "%s", BAD_ARCHIVE_MSG);
@@ -103,7 +127,6 @@ int archive_extract(const char *archive_path, const char *output_dir) {
         }
     }
 
-    /* 3. Cikis dizini varsa olustur. */
     if (output_dir != NULL && strcmp(output_dir, ".") != 0) {
         if (mkdir_recursive(output_dir) != 0) {
             fprintf(stderr,
@@ -114,7 +137,6 @@ int archive_extract(const char *archive_path, const char *output_dir) {
         }
     }
 
-    /* 4. Her dosyayi sirayla cikar. */
     for (int i = 0; i < count; i++) {
         char fullpath[MAX_PATH_LEN];
         int n;
@@ -153,7 +175,6 @@ int archive_extract(const char *archive_path, const char *output_dir) {
             return 1;
         }
 
-        /* Orijinal izinleri geri yukle. */
         if (chmod(fullpath, entries[i].permissions) != 0) {
             fprintf(stderr,
                     "Uyari: '%s' izinleri ayarlanamadi: %s\n",
@@ -161,15 +182,7 @@ int archive_extract(const char *archive_path, const char *output_dir) {
         }
     }
 
-    /* Arsivde fazladan bayt var mi? Olmamali — bozuk olabilir.
-     * Sadece uyari basariyoruz, hata degil (kullaniciya zarar vermez). */
-    int extra = fgetc(in);
-    if (extra != EOF) {
-        fprintf(stderr,
-                "Uyari: Arsivin sonunda beklenmeyen %d bayt var.\n", 1);
-    }
-
     fclose(in);
-    printf("Dosyalar başarıyla çıkarıldı.\n");
+    print_success_message(output_dir, entries, count);
     return 0;
 }

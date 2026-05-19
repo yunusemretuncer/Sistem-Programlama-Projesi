@@ -1,2 +1,0 @@
-Hello, tarsau!
-This is the first test file.

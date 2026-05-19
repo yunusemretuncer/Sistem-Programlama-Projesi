@@ -79,5 +79,5 @@ tarsau/
 
 ## Geliştiriciler
 
-- [Öğrenci 1 Adı] – Öğrenci No: [...]
-- [Öğrenci 2 Adı] – Öğrenci No: [...]
+- Sena Kuzğu - G231210385
+- Yunus Emre Tuncer - G231210045

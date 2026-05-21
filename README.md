@@ -18,6 +18,18 @@ Temizleme:
 make clean
 ```
 
+## Test
+
+Otomatik test scripti, 11 farklı senaryoyu (arşivleme, çıkarma, izin koruma,
+ASCII reddi, bozuk arşiv tespiti, nested dizin oluşturma, boş dosya, vb.)
+çalıştırıp her birinin spec'e uygun çıktı verdiğini doğrular:
+
+```bash
+make test
+```
+
+Tüm testler geçtiğinde çıktının sonunda `Tum testler gecti: 11 / 11` görünür.
+
 ## Kullanım
 
 ### Arşivleme (`-b`)
@@ -65,7 +77,7 @@ make clean
 
 ```
 tarsau/
-├── Makefile
+├── Makefile            # make / make clean / make test
 ├── README.md
 ├── src/
 │   ├── main.c          # CLI ayrıştırma, -b / -a dağıtımı
@@ -74,6 +86,7 @@ tarsau/
 │   ├── sau_format.c/.h # Ortak SAU format kodu
 │   └── util.c/.h       # ASCII doğrulama, dosya yardımcıları
 └── tests/
+    ├── run_tests.sh    # Otomatik test scripti (11 senaryo)
     └── data/           # Test dosyaları
 ```
 
